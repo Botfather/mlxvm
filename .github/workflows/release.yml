@@ -30,7 +30,9 @@ jobs:
         with:
           name: release-distributions
           path: dist/
-      - run: gh release create "$GITHUB_REF_NAME" dist/* --generate-notes
+      - run: |
+          gh release create "$GITHUB_REF_NAME" dist/* --generate-notes \
+            || gh release upload "$GITHUB_REF_NAME" dist/* --clobber
         env:
           GH_TOKEN: ${{ github.token }}
 
@@ -38,16 +40,24 @@ jobs:
     needs: publish
     runs-on: ubuntu-latest
     steps:
-      - name: Bump Homebrew formula
-        uses: mislav/bump-homebrew-formula-action@v3
-        with:
-          formula-name: mlxvm
-          formula-path: Formula/mlxvm.rb
-          homebrew-tap: Botfather/homebrew-tap
-          tag-name: ${{ github.ref_name }}
-          commit-message: |
-            mlxvm {{version}}
-
-            Created by https://github.com/mislav/bump-homebrew-formula-action
+      - name: Bump Homebrew formula in tap
         env:
-          COMMITTER_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          version="${TAG#v}"
+          url="https://github.com/${GITHUB_REPOSITORY}/archive/refs/tags/${TAG}.tar.gz"
+          sha="$(curl -fsSL "$url" | sha256sum | cut -d' ' -f1)"
+          git clone "https://x-access-token:${TAP_TOKEN}@github.com/Botfather/homebrew-tap.git" tap
+          cd tap
+          sed -i -E "s#^( *url ).*#\1\"${url}\"#" Formula/mlxvm.rb
+          sed -i -E "s#^( *sha256 ).*#\1\"${sha}\"#" Formula/mlxvm.rb
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet; then
+            echo "Formula already up to date for ${version}"
+            exit 0
+          fi
+          git commit -am "mlxvm ${version}"
+          git push
