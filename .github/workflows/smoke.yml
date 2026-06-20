@@ -1,0 +1,23 @@
+name: Apple Silicon smoke test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  inference:
+    runs-on: macos-15
+    timeout-minutes: 30
+    env:
+      MLXVM_HOME: ${{ runner.temp }}/mlxvm-smoke
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install .
+      - run: mlxvm doctor
+      - run: mlxvm install mlx-community/Qwen3-0.6B-4bit --alias default --yes
+      - run: mlxvm install mlx-community/Qwen3-0.6B-4bit --offline --yes --json
+      - run: mlxvm run "Reply with the single word ready." --max-tokens 8
+      - run: mlxvm uninstall default --yes
+
