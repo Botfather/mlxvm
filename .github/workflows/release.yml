@@ -31,3 +31,21 @@ jobs:
       - run: gh release create "$GITHUB_REF_NAME" dist/* --generate-notes
         env:
           GH_TOKEN: ${{ github.token }}
+
+  homebrew:
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Bump Homebrew formula
+        uses: mislav/bump-homebrew-formula-action@v3
+        with:
+          formula-name: mlxvm
+          formula-path: Formula/mlxvm.rb
+          homebrew-tap: Botfather/homebrew-tap
+          tag-name: ${{ github.ref_name }}
+          commit-message: |
+            mlxvm {{version}}
+
+            Created by https://github.com/mislav/bump-homebrew-formula-action
+        env:
+          COMMITTER_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}

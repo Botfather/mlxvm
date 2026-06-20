@@ -66,12 +66,18 @@ MLX is Apple-Silicon-only; `mlxvm` validates this with `mlxvm doctor`.
 
 ## Install
 
-Use an isolated application environment:
+The simplest path on a Mac is Homebrew, which pulls in Python for you:
 
 ```sh
-pipx install mlxvm
-# or
+brew install botfather/tap/mlxvm
+```
+
+Or install into an isolated application environment with pipx or uv:
+
+```sh
 uv tool install mlxvm
+# or
+pipx install mlxvm
 ```
 
 Enable current-shell model selection by evaluating the integration snippet and
